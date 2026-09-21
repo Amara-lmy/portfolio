@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>李明瑶 · 作品集 2026</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #525659;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Helvetica Neue", sans-serif;
+    color: #fff;
+    min-height: 100vh;
+  }
+  .toolbar {
+    position: sticky;
+    top: 0;
+    background: #2c2c2c;
+    color: #fff;
+    padding: 12px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 1000;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .toolbar .title {
+    font-size: 16px;
+    font-weight: 600;
+  }
+  .toolbar .actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  .toolbar a {
+    color: #fff;
+    text-decoration: none;
+    padding: 8px 18px;
+    background: #4a90e2;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: background 0.2s;
+  }
+  .toolbar a:hover { background: #357ABD; }
+  .toolbar .page-info {
+    font-size: 13px;
+    color: #aaa;
+  }
+  #pdf-container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 16px 10px 40px;
+  }
+  .page-wrapper {
+    margin: 0 auto 14px;
+    position: relative;
+    background: #fff;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    max-width: 100%;
+  }
+  .page-wrapper canvas {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+  .page-loading {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #999;
+    font-size: 13px;
+    background: #f5f5f5;
+  }
+  .page-loading .spinner {
+    width: 24px;
+    height: 24px;
+    border: 3px solid #ddd;
+    border-top-color: #4a90e2;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-right: 8px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .status {
+    text-align: center;
+    padding: 80px 20px;
+    color: #ccc;
+    font-size: 15px;
+  }
+  .status .spinner {
+    display: inline-block;
+    width: 32px;
+    height: 32px;
+    border: 3px solid #555;
+    border-top-color: #4a90e2;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-bottom: 16px;
+  }
+  .progress-bar {
+    width: 220px;
+    max-width: 80%;
+    height: 4px;
+    background: #444;
+    border-radius: 2px;
+    margin: 14px auto 0;
+    overflow: hidden;
+  }
+  .progress-bar > div {
+    height: 100%;
+    background: #4a90e2;
+    width: 0%;
+    transition: width 0.3s;
+  }
+  .error-fallback {
+    text-align: center;
+    padding: 40px 20px;
+    line-height: 1.8;
+  }
+  .error-fallback a {
+    display: inline-block;
+    color: #4a90e2;
+    text-decoration: none;
+    padding: 12px 30px;
+    border: 2px solid #4a90e2;
+    border-radius: 6px;
+    margin-top: 15px;
+    font-size: 15px;
+  }
+</style>
+</head>
+<body>
+<div class="toolbar">
+  <div class="title">李明瑶 · 作品集 2026</div>
+  <div class="actions">
+    <span class="page-info" id="pageInfo">加载中...</span>
+    <a href="portfolio-limingyao-2026.pdf" download>下载 PDF</a>
+  </div>
+</div>
+
+<div id="pdf-container">
+  <div class="status" id="status">
+    <div class="spinner"></div>
+    <div id="statusText">正在加载作品集（19MB），请稍候...</div>
+    <div class="progress-bar"><div id="progressBar"></div></div>
+  </div>
+</div>
+
+<script src="pdf.min.js"></script>
+<script>
+(function() {
+  var PDF_URL = 'portfolio-limingyao-2026.pdf';
+  var container = document.getElementById('pdf-container');
+  var status = document.getElementById('status');
+  var statusText = document.getElementById('statusText');
+  var pageInfo = document.getElementById('pageInfo');
+  var progressBar = document.getElementById('progressBar');
+
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'pdf.worker.min.js';
+
+  var loadingTask = pdfjsLib.getDocument({ url: PDF_URL });
+
+  loadingTask.onProgress = function(progress) {
+    if (progress.total) {
+      var percent = Math.round((progress.loaded / progress.total) * 100);
+      progressBar.style.width = percent + '%';
+      statusText.textContent = '正在加载作品集（19MB）' + percent + '%';
+    }
+  };
+
+  loadingTask.promise.then(function(pdf) {
+    var numPages = pdf.numPages;
+    pageInfo.textContent = '共 ' + numPages + ' 页';
+
+    // 先拿到第1页尺寸，按相同宽高比为所有页建立占位
+    pdf.getPage(1).then(function(firstPage) {
+      var baseViewport = firstPage.getViewport({ scale: 1 });
+      var ratio = baseViewport.height / baseViewport.width;
+
+      container.innerHTML = '';
+      var wrappers = [];
+      for (var i = 1; i <= numPages; i++) {
+        var wrapper = document.createElement('div');
+        wrapper.className = 'page-wrapper';
+        wrapper.style.aspectRatio = '1 / ' + ratio;
+        var loading = document.createElement('div');
+        loading.className = 'page-loading';
+        loading.innerHTML = '<span class="spinner"></span>第 ' + i + ' 页';
+        wrapper.appendChild(loading);
+        wrapper.dataset.pageNum = i;
+        container.appendChild(wrapper);
+        wrappers.push(wrapper);
+      }
+
+      var rendered = {};
+      function renderPage(pageNum) {
+        if (rendered[pageNum]) return Promise.resolve();
+        rendered[pageNum] = true;
+        var wrapper = wrappers[pageNum - 1];
+        return pdf.getPage(pageNum).then(function(page) {
+          var cssWidth = wrapper.clientWidth;
+          var dpr = window.devicePixelRatio || 1;
+          var viewport = page.getViewport({ scale: 1 });
+          var scale = (cssWidth / viewport.width) * Math.min(dpr, 2);
+          var scaledViewport = page.getViewport({ scale: scale });
+
+          var canvas = document.createElement('canvas');
+          canvas.width = scaledViewport.width;
+          canvas.height = scaledViewport.height;
+          return page.render({
+            canvasContext: canvas.getContext('2d'),
+            viewport: scaledViewport
+          }).promise.then(function() {
+            wrapper.innerHTML = '';
+            wrapper.appendChild(canvas);
+          });
+        }).catch(function(err) {
+          console.error('Page ' + pageNum + ' render error:', err);
+          rendered[pageNum] = false;
+        });
+      }
+
+      // 首屏立即渲染前 3 页
+      [1, 2, 3].forEach(function(n) { if (n <= numPages) renderPage(n); });
+
+      // 滚动到可视区域时懒加载其余页面
+      var observer = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+          if (entry.isIntersecting) {
+            var n = parseInt(entry.target.dataset.pageNum, 10);
+            renderPage(n);
+            // 预渲染相邻页
+            if (n + 1 <= numPages) renderPage(n + 1);
+          }
+        });
+      }, { rootMargin: '600px 0px 600px 0px' });
+      wrappers.forEach(function(w) { observer.observe(w); });
+    });
+  }).catch(function(err) {
+    console.error('PDF load error:', err);
+    container.innerHTML = '<div class="status error-fallback">' +
+      '<div>作品集加载失败，可能是网络问题。</div>' +
+      '<div style="color:#999;font-size:13px;margin-top:8px">你可以直接下载 PDF 查看</div>' +
+      '<a href="' + PDF_URL + '" download>下载 PDF（19MB）</a>' +
+      '</div>';
+  });
+})();
+</script>
+</body>
+</html>
