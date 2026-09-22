@@ -27,6 +27,8 @@
     padding: 8px 18px; background: #4a90e2; border-radius: 4px; font-size: 14px;
   }
   .toolbar a:hover { background: #357ABD; }
+  .toolbar a.hd-btn { background: #50b83c; }
+  .toolbar a.hd-btn:hover { background: #3d9e2c; }
   .toolbar .page-info { font-size: 13px; color: #aaa; }
   #pdf-container { max-width: 1000px; margin: 0 auto; padding: 16px 10px 40px; }
   .page-wrapper {
@@ -72,6 +74,7 @@
   <div class="title">李明瑶 · 作品集 2026</div>
   <div class="actions">
     <span class="page-info" id="pageInfo">加载中...</span>
+    <a href="portfolio-limingyao-2026.pdf" target="_blank" class="hd-btn" title="浏览器原生预览，矢量渲染最清晰">高清查看</a>
     <a href="portfolio-limingyao-2026.pdf" download>下载 PDF</a>
   </div>
 </div>
@@ -137,10 +140,15 @@
         var wrapper = wrappers[pageNum - 1];
         return pdf.getPage(pageNum).then(function(page) {
           var cssWidth = wrapper.clientWidth;
-          // 清晰度：高分屏渲染更清晰（最多 3 倍防止超大内存）
-          var dpr = Math.min(window.devicePixelRatio || 1, 3);
+          // 清晰度：按设备像素比渲染，上限 4 倍，同时限制最大画布边长 8192px
+          var dpr = Math.min(window.devicePixelRatio || 1, 4);
           var viewport = page.getViewport({ scale: 1 });
           var scale = (cssWidth / viewport.width) * dpr;
+          // 限制最长边不超过 8192px，避免内存爆炸
+          var maxSide = Math.max(viewport.width, viewport.height) * scale;
+          if (maxSide > 8192) {
+            scale = scale * (8192 / maxSide);
+          }
           var scaledViewport = page.getViewport({ scale: scale });
 
           var canvas = document.createElement('canvas');
