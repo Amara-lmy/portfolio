@@ -101,11 +101,6 @@
 
   pdfjsLib.GlobalWorkerOptions.workerSrc = 'pdf.worker.min.js';
 
-  // 链接跳转处理：点击 PDF 内的链接时，在新标签页打开
-  var linkService = new pdfjsLib.PDFLinkService();
-  linkService.externalLinkTarget = pdfjsLib.LinkTarget.BLANK;
-  linkService.externalLinkRel = 'noopener noreferrer';
-
   var loadingTask = pdfjsLib.getDocument({
     url: PDF_URL,
     cMapUrl: 'cmaps/',
@@ -121,7 +116,6 @@
   };
 
   loadingTask.promise.then(function(pdf) {
-    linkService.setDocument(pdf, null);
     var numPages = pdf.numPages;
     pageInfo.textContent = '共 ' + numPages + ' 页';
 
@@ -190,17 +184,14 @@
               textLayerDiv.style.transform = 'scale(' + scaleCss + ')';
               textLayerDiv.style.transformOrigin = 'top left';
 
-              // 绑定链接跳转
-              linkService.setViewer({ pageNumber: pageNum });
+              // 绑定链接跳转（直接处理 textLayer 中的 <a>）
               var links = textLayerDiv.querySelectorAll('a');
               links.forEach(function(a) {
-                a.addEventListener('click', function(e) {
-                  var href = a.getAttribute('data-href') || a.getAttribute('href');
-                  if (href) {
-                    e.preventDefault();
-                    window.open(href, '_blank', 'noopener,noreferrer');
-                  }
-                });
+                var href = a.getAttribute('data-href') || a.getAttribute('href');
+                if (href) {
+                  a.setAttribute('target', '_blank');
+                  a.setAttribute('rel', 'noopener noreferrer');
+                }
               });
             });
           });
